@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+
+  broker-service:
+    build:
+      # context: — директория, которая будет отправлена в Docker daemon во время сборки.
+      context: ./../broker-service
+      # dockerfile: — конкретный путь к Dockerfile (в данном случае он называется broker-service.dockerfile и тоже находится в ../broker-service).
+      dockerfile: ./../broker-service/broker-service.dockerfile
+    # Определяет, что Docker должен делать, если контейнер упал или перезапустился демон:
+    # always — надёжный вариант для production (контейнер автоматически перезапускается после краша или перезагрузки сервера).
+    restart: always
+    # первый порт на моей машине второй порт внутри контейнера
+    ports:
+      - "8080:8080"
+    # Этот блок относится к Docker Swarm (а не обычному docker-compose up).
+    # Используется, если ты разворачиваешь приложение в кластерном режиме (docker swarm)
+    # mode: replicated — значит, мы будем запускать несколько копий (реплик) контейнера.
+    # replicas: 1 — количество реплик (в данном случае — одна).
+    # Можно увеличить, например replicas: 3 — тогда запустятся три копии контейнера, и Swarm распределит нагрузку.
+    deploy:
+      mode: replicated
+      replicas: 1
