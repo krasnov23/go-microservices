@@ -13,7 +13,7 @@ services:
     restart: always
     # первый порт на моей машине второй порт внутри контейнера
     ports:
-      - "8080:8080"
+      - "8081:8080"
     # Этот блок относится к Docker Swarm (а не обычному docker-compose up).
     # Используется, если ты разворачиваешь приложение в кластерном режиме (docker swarm)
     # mode: replicated — значит, мы будем запускать несколько копий (реплик) контейнера.
@@ -22,3 +22,35 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+
+  authentication-service:
+    build:
+      context: ./../authentication-service
+      dockerfile: ./../authentication-service/authentication-service.dockerfile
+    restart: always
+    ports:
+      - "8084:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disabled timezone=UTC connect_timeout=5"
+
+
+  postgres:
+    image: 'postgres:14.2'
+    ports:
+      - "5432:5432"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: users
+    # Она создаёт bind mount — то есть связывает папку на твоей машине (host)
+    # с папкой внутри контейнера.
+    # Когда контейнер postgres будет удалён (docker rm, docker-compose down и т.д.),
+    # все данные останутся в ./db-data/postgres/ на твоей машине.
+    volumes:
+      - ./db-data/postgres/:/var/lib/postgresql/data/

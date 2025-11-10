@@ -8,9 +8,13 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	_ "github.com/jackc/pgconn"
+	_ "github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/v4/stdlib" // Регистрирует драйвер "pgx" для database/sql, если убрать sql получим: unknown driver "pgx"
 )
 
-const webPort = "8084"
+const webPort = "80"
 
 var counts int64
 
@@ -46,12 +50,16 @@ func main() {
 }
 
 func openDB(dsn string) (*sql.DB, error) {
+
+	// открывает объект подключения с использованием драйвера "pgx".
+	// соединение ещё не устанавливается — просто создаётся структура для него.
 	db, err := sql.Open("pgx", dsn)
 
 	if err != nil {
 		return nil, err
 	}
 
+	// тестирует подключение к БД (выполняет короткий запрос).
 	err = db.Ping()
 	if err != nil {
 		return nil, err
@@ -60,8 +68,11 @@ func openDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
+// В итоге connectToDB() делает 10 попыток подключения с интервалом в 2 секунды.
+// Это нужно, если БД поднимается позже, например, при запуске через Docker Compose.
 func connectToDB() *sql.DB {
 
+	// получает строку подключения из переменной окружения DSN
 	dsn := os.Getenv("DSN")
 
 	for {
